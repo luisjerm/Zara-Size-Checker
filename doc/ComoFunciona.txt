@@ -1,0 +1,22 @@
+Gestión de búsquedas
+	- Formato de las peticiones:
+		- /command url {talla}
+			- command: /precio, /talla
+				- precio: notifica cuando se produce una bajada de precio, uede llevar el campo talla
+				- talla: notifica cuando la talla pasada esté disponible, necesita el campo talla
+			- url: dirección del producto
+			- talla: talla o tamaño de producto
+	- Comprobaciones
+		Las tareas se guardan en un fichero de text process.txt, cada petición va en una linea.
+		Por cada petición se guarda: url + {talla} + {precio=0} + userId
+		El campo talla es opcional, se guardara si lo que comprobamos es el stock
+		El campo precio inicialmente tendrá el valor 0 y se irá actualizando con el valor leido
+		userId: usuario de telegram que realizó la petición y al que hay que notificar
+		
+		Las tareas se evaluan de forma secuencial con un periodo aleatorio que va desde 300 a 600s. Si una tarea se completa se notifica y 
+		se elimina de la lista
+		
+		Cada tarea es lanzada en un script de python diferente en función de la url ya que cada web se tiene que scrappear 
+		de forma diferente. Para que el script llamante recoja el resultado del scrappeo se recoge el stdout de cada script, de esta forma
+		cada script podrá noticar el precio, si la talla esta disponible o no por stdout y el script principal analizarlo para saber si hay 
+		que borrara la tarea y notificar, actulizar el precio etc.
