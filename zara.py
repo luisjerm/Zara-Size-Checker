@@ -7,7 +7,9 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+
 import winsound
 from data import (TOKEN)
 ####
@@ -20,8 +22,14 @@ async def operaciones_largas(parametros):
     try:
         # Dividir los parámetros en dos strings
         parametro1, parametro2 = parametros.split()
-        # Se inicia la ventana del navegador
-        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+
+        # evitamos abrir la ventana del navegador
+        options = Options()
+        options.add_argument('--headless')
+        #options.headless = True
+
+        # Se inicia la ventana del navegador options=options,
+        driver = webdriver.Chrome(options=options, service=ChromeService(ChromeDriverManager().install()))
 
         # Se escribe el link al artículo
         # driver.get('https://www.zara.com/es/es/share/-p05427407.html?v1=327249367&utm_campaign=productShare&utm_medium=mobile_sharing_iOS&utm_source=red_social_movil')

@@ -14,14 +14,21 @@ Basic Echobot example, repeats messages.
 Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
-
+import os
 import logging
 import subprocess
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext
 
 from data import (TOKEN, webSites)
+import threading as th
+import time, random 
 
+# create a lock
+lock = th.Lock()
+# acquire the lock
+lock.acquire()
+lock.release()
 
 
 # Enable logging
@@ -55,7 +62,93 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Echo the user message."""
     await update.message.reply_text(update.message.text)
 
-async def ejecutar(update: Update, context: CallbackContext) -> None:
+# realiza una espera aleatoria 
+def timepoAleatorio(val):
+    min = 10
+    max = 11
+    ranges = [i for i in range(min, max)]
+    delay = random.choice(ranges)
+    print(delay)
+    return delay
+
+def saveProcess(params, user):
+    # bloqueo el proceso 
+    lock.acquire()
+    f = open ('process.txt','a')
+    # Recorremos la lista de webs y si esta en la lista lanzamos su script
+    found = False
+    for web in webSites:
+        if web[0] in params:
+            #  A parte hay que comprobar mas cosas, para segurarnos que no nos meten  mierda 
+            f.write(params + ' ' + user + '\n')
+            print('Guardado '+ params)
+            f.close()
+            found = True
+            break
+    lock.release()
+    return found
+
+def executeProcess():
+    # bloqueo el proceso 
+    lock.acquire()
+    if os.path.isfile('process.txt') == False:
+        lock.release()
+        return
+    f = open ('process.txt','r')
+    if f:
+        # leemos todas las lineas del archivo
+        lines = f.readlines()
+        lines_new = lines.copy()
+        f.close()
+        if len(lines) == 0:
+            lock.release()
+            return
+        # recorremos las lineas
+        for line in lines:
+            print('Linea '+ line)
+            # dividimos la linea en 3 partes
+            att = line.split()
+            user = att[-1]
+            url = att[0]
+            params = ' '.join(att[1:-1])
+            parametros = url + ' ' + params
+            # Recorremos la lista de webs y si esta en la lista lanzamos su script
+            for web in webSites:
+                if web[0] in url:
+                    # lanzamos el proceso
+                    script = subprocess.Popen(['python', web[1], parametros, user], stdout=subprocess.PIPE)
+                    output = script.communicate()[0].decode()
+                    # esperamos a que termine
+                    script.wait()
+                    output = output.replace('\r\n', '')
+                    print('Proceso terminado: ' + output)
+                    if output == -1:
+                        print('Error en el script')
+                    else:
+                        print('Proceso terminado')
+                        if 'bajado' in output or 'tienes' in output:
+                            # borramos la linea del archivo
+                            lines_new.remove(line)
+                        else:
+                            # si en line aparece precio= actalizamos el valor que aparece despues del = hasta el espacio con el valor de output
+                            if 'precio=' in line:
+                                lines_new.remove(line)
+                                updPrize = params.split('=')[0]
+                                # revisar cuando hay size y precio, hay que mantener el size¡¡¡¡¡¡¡¡
+                                line = url + ' ' + updPrize + '=' + output + ' ' + user + '\n'
+                                lines_new.append(line)
+        # escribimos las lineas en el archivo
+        # borramos el archivo
+        os.remove('process.txt')
+        f = open ('process.txt','w')
+        for line in lines_new:
+            f.write(line)
+        f.close()
+
+
+    lock.release()
+
+async def talla(update: Update, context: CallbackContext) -> None:
 
     # Obtener información del usuario y mensaje
     user_id = update.message.from_user.id
@@ -64,24 +157,70 @@ async def ejecutar(update: Update, context: CallbackContext) -> None:
 
     # Puedes ajustar esta línea según tus necesidades
     parametros = " ".join(message_text.split(" ")[1:])
-    found = False
+    found = saveProcess(parametros, str(user_id))
     # Recorremos la lista de webs y si esta en la lista lanzamos su script
-    for web in webSites:
+    '''for web in webSites:
         if web[0] in parametros:
             subprocess.Popen(['python', web[1], parametros, str(user_id)])
             await update.message.reply_text("Vamos a ello!")
-            found = True
+            found = True'''
+    
+    if not found:
+        await update.message.reply_text("No se ha encontrado la web que buscas")
+        
+async def precio(update: Update, context: CallbackContext) -> None:
+
+    # Obtener información del usuario y mensaje
+    user_id = update.message.from_user.id
+    message_text = update.message.text
+    # await update.message.reply_text("Vamos a lanzar el script!")    # Lanzar el script secundario en un proceso separado
+
+    # Puedes ajustar esta línea según tus necesidades
+    parametros = " ".join(message_text.split(" ")[1:])
+    #insertamos el parametro precio con valor 0
+    parametros = parametros + " precio=0"
+    found = saveProcess(parametros, str(user_id))
+    # Recorremos la lista de webs y si esta en la lista lanzamos su script
+    '''for web in webSites:
+        if web[0] in parametros:
+            subprocess.Popen(['python', web[1], parametros, str(user_id)])
+            await update.message.reply_text("Vamos a ello!")
+            found = True'''
     
     if not found:
         await update.message.reply_text("No se ha encontrado la web que buscas")
 
+async def TallaPrecio(update: Update, context: CallbackContext) -> None:
 
-    # if 'zar' in parametros:
-    #    subprocess.Popen(['python', 'zara.py', parametros, str(user_id)])
-    #elif 'sezane' in parametros:
-    #    subprocess.Popen(['python', 'sezane.py', parametros, str(user_id)])
+    # Obtener información del usuario y mensaje
+    user_id = update.message.from_user.id
+    message_text = update.message.text
+    # await update.message.reply_text("Vamos a lanzar el script!")    # Lanzar el script secundario en un proceso separado
 
-    # await update.message.reply_text("script lanzado!")
+    # Puedes ajustar esta línea según tus necesidades
+    parametros = " ".join(message_text.split(" ")[1:])
+    parametros = parametros + " precio"
+    found = saveProcess(parametros, str(user_id))
+    # Recorremos la lista de webs y si esta en la lista lanzamos su script
+    '''for web in webSites:
+        if web[0] in parametros:
+            # guardamos el proceso en archivo
+
+            subprocess.Popen(['python', web[1], parametros, str(user_id)])
+            await update.message.reply_text("Vamos a ello!")
+            found = True'''
+    
+    if not found:
+        await update.message.reply_text("No se ha encontrado la web que buscas")
+
+def processCheckTh():
+    while True:
+        wait = timepoAleatorio(20)
+        waitIter = wait/0.1
+        for i in range(0, int(waitIter)):
+            # duerme el hilo
+            time.sleep(0.1)
+        executeProcess()
 
 def main() -> None:
     """Start the bot."""
@@ -91,14 +230,18 @@ def main() -> None:
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("ejecutar", ejecutar))
+    application.add_handler(CommandHandler("talla", talla))
+    application.add_handler(CommandHandler("precio", precio))
+    application.add_handler(CommandHandler("tp", TallaPrecio))
 
     # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-
+    # Creamos un hilo
+    th.Thread(target=processCheckTh).start()
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-
+    # cerramos el hilo
+    th.Thread(target=processCheckTh).join()
 
 if __name__ == "__main__":
     main()

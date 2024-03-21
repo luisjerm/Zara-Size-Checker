@@ -19,6 +19,62 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": ["https://www.deporvillage.com/zapatillas-northwave-raptor-arctic-gtx 39", "@LewisoJ"]
+        },
+        {
+            "name": "Deporvillage precio",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["https://www.deporvillage.com/zapatillas-northwave-raptor-arctic-gtx precio", "@LewisoJ"]
+        },
+        {
+            "name": "Amazon precio",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["https://www.amazon.es/dp/B07B4ZFC8S/?coliid=I64IRMAR3DY0R&colid=9UP736O9DZJJ&ref_=list_c_wl_lv_ov_lig_dp_it&th=1 precio", "@LewisoJ"]
+        },
+        {
+            "name": "Amazon Simple",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["https://www.amazon.es precio", "@LewisoJ"]
+        },
+        {
+            "name": "Sezane product",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["https://www.sezane.com/es/product/cinturon-artemis/beige#size-80 80", "@LewisoJ"]
+        },
+        {
+            "name": "Sezane",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["https://www.sezane.com 80", "@LewisoJ"]
+        },
+        {
+            "name": "ECI PRECIO",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["https://www.elcorteingles.es/hogar/MP_0523217_21179300000-cocotte-redonda-baja-de-hierro-fundido-le-creuset/?parentCategoryId=999.52848013&color=Cereza precio", "@LewisoJ"]
+        },
+        {
+            "name": "Zara",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["https://www.zara.com/es/es/share/-p05427407.html?v1=327249367&utm_campaign=productShare&utm_medium=mobile_sharing_iOS&utm_source=red_social_movil XS", "@LewisoJ"]
         }
     ]
 }
