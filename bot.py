@@ -64,8 +64,8 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # realiza una espera aleatoria 
 def timepoAleatorio(val):
-    min = 10
-    max = 11
+    min = 300
+    max = 600
     ranges = [i for i in range(min, max)]
     delay = random.choice(ranges)
     print(delay)

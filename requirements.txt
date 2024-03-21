@@ -1,0 +1,7 @@
+###### Requirements without Version Specifiers ######
+# pip install -r requirements.txt
+telegram
+python-telegram-bot
+bs4
+selenium
+undetected_chromedriver
