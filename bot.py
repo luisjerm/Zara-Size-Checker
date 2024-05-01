@@ -13,6 +13,10 @@ Usage:
 Basic Echobot example, repeats messages.
 Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
+Notes:
+- Usamos esto en la libreria de undetected chromedriver porque al cerrarlo con .quit() peta, modificamos el metodo __del__
+    https://github.com/ultrafunkamsterdam/undetected-chromedriver/issues/955
+
 """
 import os
 import logging
@@ -121,10 +125,13 @@ def executeProcess():
                     # esperamos a que termine
                     script.wait()
                     output = output.replace('\r\n', '')
-                    print('Proceso terminado: ' + output)
+                    print('Proceso terminado: ' + output + 'longitud:' + str(len(output)))
                     if output == -1:
                         print('Error en el script')
                     else:
+                        if len(output) == 0:
+                            print('Resultado vacio')
+                            continue
                         print('Proceso terminado')
                         if 'bajado' in output or 'tienes' in output:
                             # borramos la linea del archivo
