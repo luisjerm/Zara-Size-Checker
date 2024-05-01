@@ -17,6 +17,11 @@ import random
 from data import (TOKEN)
 bot = Bot(token=TOKEN)
 ####
+from inspect import currentframe, getframeinfo
+
+frameinfo = getframeinfo(currentframe())
+
+####
 
 # realiza una espera aleatoria 
 def timepoAleatorio(val):
@@ -55,33 +60,33 @@ async def operaciones_largas(parametros):
         chrome_options.add_argument(f'user-agent={userAgent}')
         browser = uc.Chrome(options=chrome_options)
         browser.get(url)
-        # cookies
-        WebDriverWait(browser, 5)\
+        # cookies, subimos tiempo, antes 5s saltaba error porque tenian cuenta atras
+        WebDriverWait(browser, 30)\
             .until(EC.element_to_be_clickable((By.XPATH, '//*[@id="onetrust-reject-all-handler"]')))\
             .click()
         #browser.find_element("xpath",'//*[@id="onetrust-reject-all-handler"]').click()
-        
-        
-        # desplegamos tamanos
-        WebDriverWait(browser, 5)\
-            .until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'div.dropdown-input')))\
-            .click()
-        # browser.find_element(By.CSS_SELECTOR, 'div.dropdown-input').click()
+        found = True
+        if(talla != ''):
+            # desplegamos tamanos
+            WebDriverWait(browser, 5)\
+                .until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'div.dropdown-input')))\
+                .click()
+            # browser.find_element(By.CSS_SELECTOR, 'div.dropdown-input').click()
 
-        # evaluamos si existe el tamaño indicado
-        # en div.container-size vertical se almacena la lista de tamaños
-        sizes = browser.find_element(By.CSS_SELECTOR, 'div.container-size.vertical')
-        # recorremos los div.size-element__container de sizes para buscar el tamaño
-        found = False
-        for i in sizes.find_elements(By.CSS_SELECTOR, 'div.size-element__container'):
-            size = i.find_element(By.CSS_SELECTOR, 'span.size-label').text
-            if talla in size:
-                found = True
-                i.click()
-                if not precio:
-                    resultado = f"Aquí lo tienes! \r\n {url}"
-                    return resultado
-                break
+            # evaluamos si existe el tamaño indicado
+            # en div.container-size vertical se almacena la lista de tamaños
+            sizes = browser.find_element(By.CSS_SELECTOR, 'div.container-size.vertical')
+            # recorremos los div.size-element__container de sizes para buscar el tamaño
+            found = False
+            for i in sizes.find_elements(By.CSS_SELECTOR, 'div.size-element__container'):
+                size = i.find_element(By.CSS_SELECTOR, 'span.size-label').text
+                if talla in size:
+                    found = True
+                    i.click()
+                    if not precio:
+                        resultado = f"Aquí lo tienes! \r\n {url}"
+                        return resultado
+                    break
         if found:
             #print('Talla disponible')
             # evaluamos el precio
@@ -107,7 +112,7 @@ async def operaciones_largas(parametros):
                 resultado = str(precioValor)
             return resultado
     except Exception as e:
-        raise RuntimeError(f"Error en operaciones_largas: {str(e)}")
+        raise RuntimeError(f"Error en operaciones_largas {frameinfo.filename}: {str(e)}")
 
 async def main():
     parametros = sys.argv[1]
