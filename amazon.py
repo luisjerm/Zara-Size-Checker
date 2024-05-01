@@ -46,22 +46,27 @@ async def operaciones_largas(parametros):
         chrome_options = webdriver.ChromeOptions()
         userAgent = agenteUsuario()
         chrome_options.add_argument(f'user-agent={userAgent}')
+        chrome_options.add_argument('--headless')
         browser = uc.Chrome(options=chrome_options)
         browser.get(parametro1)
         # cookies
-        WebDriverWait(browser, 5)\
-            .until(EC.element_to_be_clickable((By.XPATH, '//*[@id="sp-cc-rejectall-link"]')))\
-            .click()
-        #browser.find_element("xpath",'//*[@id="sp-cc-rejectall-link"]').click()
+        try:
+            WebDriverWait(browser, 10)\
+                .until(EC.element_to_be_clickable((By.XPATH, '//*[@id="sp-cc-rejectall-link"]')))\
+                .click()
+        except Exception as e:
+            RuntimeError(f"Cookies button not found: {str(e)}")
+            #browser.find_element("xpath",'//*[@id="sp-cc-rejectall-link"]').click()
         
         #refrescamos porque sale un mensaje de que hay que recargar
         #browser.refresh()
+        # A veces salta que donde se encuentra el tiempo no tiene la propiedad text ... vamos a esperar por si acaso
+        time.sleep(1)
         html = browser.page_source
         soup = bs(html, 'html.parser')
 
         browser.close()
         browser.quit()
-        
         if 'precio' in parametro2:
             # Obtenemos el precio
             precio = soup.find('span', {'class': 'a-offscreen'}).text
