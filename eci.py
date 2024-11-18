@@ -12,7 +12,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 import undetected_chromedriver as uc
-import random
+import json
+from utils import *
 
 from data import (TOKEN)
 bot = Bot(token=TOKEN)
@@ -23,37 +24,20 @@ frameinfo = getframeinfo(currentframe())
 
 ####
 
-# realiza una espera aleatoria 
-def timepoAleatorio(val):
-    ranges = [i for i in range(3, val+1)]
-    return random.choice(ranges)
 
-
-# eleccion aletoria de user agent
-def agenteUsuario():
-    with open('user_agents.txt') as f:
-        user_agents = f.read().split("\n")
-        return random.choice(user_agents)   
-
-async def operaciones_largas(parametros):
+async def operaciones_largas(strParametros):
     try:
-        # Dividir los parámetros en dos strings
-        #parametro1, parametro2, parametro3= parametros.split()
-        paramList = parametros.split()
-        url = ''
-        precio = False
-        talla = ''
-        precioAnterior = 0
-        for i in range(0, len(paramList)):
-            if i == 0:
-                url = paramList[i]
-                continue
-            if 'precio' in paramList[i]:
-                precio = True
-                precioAnterior = float(paramList[i].split('=')[1])
-            else: 
-                talla = paramList[i]
-
+        # Genero un diccionario con los parametros
+        parametros = json.loads(strParametros)
+        url = parametros['url']
+        precioInfo = parametros['prizeInfo']
+        precio = precioInfo['prize']
+        initialPrize = precioInfo['initialPrize']
+        variacion = precioInfo['variation']
+        targetPrize = precioInfo['targetPrize']
+        checkPrize = precioInfo['checkPrize']
+        talla = parametros['size']
+        
         # Se inicia la ventana del navegador con ventana en segundo plano
         chrome_options = webdriver.ChromeOptions()
         userAgent = agenteUsuario()
@@ -75,18 +59,19 @@ async def operaciones_largas(parametros):
 
             # evaluamos si existe el tamaño indicado
             # en div.container-size vertical se almacena la lista de tamaños
-            sizes = browser.find_element(By.CSS_SELECTOR, 'div.container-size.vertical')
+            #sizes = browser.find_element(By.CSS_SELECTOR, 'div.container-size.vertical')
             # recorremos los div.size-element__container de sizes para buscar el tamaño
             found = False
-            for i in sizes.find_elements(By.CSS_SELECTOR, 'div.size-element__container'):
+            #for i in sizes.find_elements(By.CSS_SELECTOR, 'div.size-element__container'):
+            for i in browser.find_elements(By.CSS_SELECTOR, 'div.size-element__container'):
                 size = i.find_element(By.CSS_SELECTOR, 'span.size-label').text
                 if talla in size:
                     found = True
                     i.click()
-                    if not precio:
+                    '''if not precio:
                         resultado = f"Aquí lo tienes! \r\n {url}"
                         return resultado
-                    break
+                    break'''
         if found:
             #print('Talla disponible')
             # evaluamos el precio
@@ -97,35 +82,36 @@ async def operaciones_largas(parametros):
         #browser.close()
         browser.quit()
         
-        if precio :
+        if checkPrize == True:
             # Suprimimos el símbolo de la moneda
             precioValor = precioValor.replace('€', '')
             # Quitamos espacios
             precioValor = precioValor.strip()
             precioValor = float(precioValor.replace(',', '.'))
-            if precioAnterior == 0:
-                precioAnterior = precioValor
-            # si ha bajado el precio notificamos
-            if precioValor < precioAnterior:
-                resultado = f"El precio ha bajado! \r\n{url}"
-            else:
-                resultado = str(precioValor)
-            return resultado
+            if precio == -1:
+                precio = precioValor
+            if initialPrize == -1:
+                initialPrize = precioValor
+            notif = check(talla, found, precioValor, initialPrize, variacion, targetPrize)
+            parametros = updateEntry(parametros, precio, initialPrize, notif)
+            return parametros
+        
     except Exception as e:
         raise RuntimeError(f"Error en operaciones_largas {frameinfo.filename}: {str(e)}")
 
 async def main():
     parametros = sys.argv[1]
-    user_id = sys.argv[2]
 
     try:
         resultado = await operaciones_largas(parametros)
+        user = resultado['user']
          # Si el producto esta disponible o ha bajado de precio se envia un mensaje
-        if 'bajado' in resultado or 'tienes' in resultado:
-            await bot.send_message(chat_id=user_id, text=f"{resultado}")
+        '''if resultado['notify'] == True:
+            await bot.send_message(chat_id=user, text=f"Aquí tienes lo que estabas esperando")'''
         print(resultado)
     except Exception as e:
-        await bot.send_message(chat_id=user_id, text=f"Hubo un error: {str(e)}")
+        # await bot.send_message(chat_id=user, text=f"Hubo un error: {str(e)}")
+        print(f"Hubo un error {str(frameinfo)}: {str(e)}")
 
 if __name__ == '__main__':
     asyncio.run(main())

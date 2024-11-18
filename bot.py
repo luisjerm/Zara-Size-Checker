@@ -21,18 +21,24 @@ Notes:
 import os
 import logging
 import subprocess
-from telegram import ForceReply, Update
+from telegram import ForceReply, Update, Bot
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext
 
 from data import (TOKEN, webSites)
 import threading as th
 import time, random 
+import json
+from utils import *
+import ast
+import asyncio
 
 # create a lock
 lock = th.Lock()
 # acquire the lock
 lock.acquire()
 lock.release()
+bot = Bot(token=TOKEN)
 
 
 # Enable logging
@@ -68,8 +74,8 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # realiza una espera aleatoria 
 def timepoAleatorio(val):
-    min = 300
-    max = 600
+    min = 5
+    max = 10
     ranges = [i for i in range(min, max)]
     delay = random.choice(ranges)
     print(delay)
@@ -78,21 +84,32 @@ def timepoAleatorio(val):
 def saveProcess(params, user):
     # bloqueo el proceso 
     lock.acquire()
-    f = open ('process.txt','a')
+    f = open ('process.txt','r')
+    if f:
+        jsonFile = json.load(f)
+        f.close()
+        # borramos el archivo
+        os.remove('process.txt')
+    
     # Recorremos la lista de webs y si esta en la lista lanzamos su script
     found = False
-    for web in webSites:
-        if web[0] in params:
-            #  A parte hay que comprobar mas cosas, para segurarnos que no nos meten  mierda 
-            f.write(params + ' ' + user + '\n')
-            print('Guardado '+ params)
-            f.close()
-            found = True
+    f = open ('process.txt','w')
+    if f:
+        for web in webSites:
+            if web[0] in params:
+                entry = createEntry(params, user)
+                if entry:
+                    if jsonFile:
+                        jsonFile['actions'].append(entry)
+                        toWrite = json.dumps(jsonFile)
+                        f.write(toWrite)
+                        f.close()
+                        found = True
             break
-    lock.release()
+        lock.release()
     return found
 
-def executeProcess():
+async def executeProcess():
     # bloqueo el proceso 
     lock.acquire()
     if os.path.isfile('process.txt') == False:
@@ -100,56 +117,62 @@ def executeProcess():
         return
     f = open ('process.txt','r')
     if f:
-        # leemos todas las lineas del archivo
-        lines = f.readlines()
-        lines_new = lines.copy()
+        jsonFile = json.load(f)
         f.close()
-        if len(lines) == 0:
+        if len(jsonFile) == 0:
             lock.release()
             return
-        # recorremos las lineas
-        for line in lines:
-            print('Linea '+ line)
-            # dividimos la linea en 3 partes
-            att = line.split()
-            user = att[-1]
-            url = att[0]
-            params = ' '.join(att[1:-1])
-            parametros = url + ' ' + params
+        #jsonDict = json.dumps(jsonFile)
+        # recorremos jsonDict
+
+        for i in jsonFile['actions']:
             # Recorremos la lista de webs y si esta en la lista lanzamos su script
             for web in webSites:
-                if web[0] in url:
-                    # lanzamos el proceso
-                    script = subprocess.Popen(['python', web[1], parametros, user], stdout=subprocess.PIPE)
+                if web[0] in i['url']:
+                    # lanzamos el proceso pasandole el parametro serializado
+                    script = subprocess.Popen(['python', web[1], str(json.dumps(i))], stdout=subprocess.PIPE)
                     output = script.communicate()[0].decode()
                     # esperamos a que termine
                     script.wait()
-                    output = output.replace('\r\n', '')
-                    print('Proceso terminado: ' + output + 'longitud:' + str(len(output)))
-                    if output == -1:
+                    print(f"Proceso terminado: {i['url']} Respuesta: {str(output)}")
+                    # convertimos output a dict
+                    # buscamos en output la primera llave
+                    if output.find('{') == -1:
+                        print(f"Error en el script {web[1]} url: {i['url']} Respuesta: {str(output)}")
+                        continue
+                    output = output.split('{', 1)[1]
+                    
+                    if output == '':
                         print('Error en el script')
+                        continue
                     else:
-                        if len(output) == 0:
-                            print('Resultado vacio')
-                            continue
-                        print('Proceso terminado')
-                        if 'bajado' in output or 'tienes' in output:
-                            # borramos la linea del archivo
-                            lines_new.remove(line)
+                        output = '{' + output
+                        output = ast.literal_eval(output)
+                        if output == -1:
+                            print('Error en el script')
                         else:
-                            # si en line aparece precio= actalizamos el valor que aparece despues del = hasta el espacio con el valor de output
-                            if 'precio=' in line:
-                                lines_new.remove(line)
-                                updPrize = params.split('=')[0]
-                                # revisar cuando hay size y precio, hay que mantener el size¡¡¡¡¡¡¡¡
-                                line = url + ' ' + updPrize + '=' + output + ' ' + user + '\n'
-                                lines_new.append(line)
+                            if len(output) == 0:
+                                print('Resultado vacio')
+                                continue
+                            print('Proceso terminado')
+                            if(output['notify'] == True):
+                                user = output['user']
+                                # notificamos al usuario
+                                await bot.send_message(chat_id=user, text=f"{createResponseMsg(output)}", parse_mode=ParseMode.MARKDOWN_V2)
+                                jsonFile['actions'].remove(i)
+                            else:
+                                # Actualizamos la entrada
+                                for j in jsonFile['actions']:
+                                    if j['url'] == output['url']:
+                                        j = output
+                                        break
         # escribimos las lineas en el archivo
         # borramos el archivo
         os.remove('process.txt')
         f = open ('process.txt','w')
-        for line in lines_new:
-            f.write(line)
+        # si jsonFile no esta vacio
+        if(jsonFile):
+            f.write(str(json.dumps(jsonFile)))
         f.close()
 
 
@@ -220,14 +243,14 @@ async def TallaPrecio(update: Update, context: CallbackContext) -> None:
     if not found:
         await update.message.reply_text("No se ha encontrado la web que buscas")
 
-def processCheckTh():
+async def processCheckTh():
     while True:
         wait = timepoAleatorio(20)
         waitIter = wait/0.1
         for i in range(0, int(waitIter)):
             # duerme el hilo
             time.sleep(0.1)
-        executeProcess()
+        await executeProcess()
 
 def main() -> None:
     """Start the bot."""
@@ -243,12 +266,14 @@ def main() -> None:
 
     # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    bot = Bot(token=TOKEN)
     # Creamos un hilo
-    th.Thread(target=processCheckTh).start()
+    asyncio.run(processCheckTh())
+    #th.Thread(target=processCheckTh).start()
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
     # cerramos el hilo
-    th.Thread(target=processCheckTh).join()
+    #th.Thread(target=processCheckTh).join()
 
 if __name__ == "__main__":
     main()

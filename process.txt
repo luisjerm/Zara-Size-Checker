@@ -1,0 +1,43 @@
+{
+  "actions": [
+    {
+      "url": "https://www.elcorteingles.es/electronica/A50127660-samsung-galaxy-s24-ultra-12gb--512-gb-movil-libre/?parentCategoryId=999.51569013&color=Gris+titanium",
+      "prizeInfo": {
+        "initialPrize": -1,
+        "prize": -1,
+        "targetPrize": 0,
+        "variation": 0,
+        "checkPrize": true
+      },
+      "size": "",
+      "user": "965741872",
+      "notify": false
+    },
+    {
+      "url": "https://www.elcorteingles.es/hogar/MP_0523217_21177182202-cocotte-redonda-de-hierro-fundido-le-creuset/?gad_source=1&gclid=Cj0KCQjw_-GxBhC1ARIsADGgDjtwnPts9x73s-oioNsnlmwdX0dDf21H47Qfo6dzaQisW2g6vv06xqgaAm5iEALw_wcB&gclsrc=aw.ds&color=Cereza",
+      "prizeInfo": {
+        "initialPrize": -1,
+        "prize": -1,
+        "targetPrize": 444.44,
+        "variation": 0,
+        "checkPrize": true
+      },
+      "size": "24",
+      "user": "965741872",
+      "notify": false
+    },
+    {
+      "url": "https://www.elcorteingles.es/bebes/A42921137-silla-de-paseo-maxi-cosi-zelia3/?parentCategoryId=999.11852987013&color=Gris+oscuro&_gl=1*17pltrj*_up*MQ..&gclid=EAIaIQobChMImJPXp4jthQMVgDsGAB2cIAHdEAAYASAAEgIOTvD_BwE&gclsrc=aw.ds",
+      "prizeInfo": {
+        "initialPrize": -1,
+        "prize": -1,
+        "targetPrize": 444.44,
+        "variation": 0,
+        "checkPrize": true
+      },
+      "size": "",
+      "user": "965741872",
+      "notify": false
+    }
+  ]
+}
